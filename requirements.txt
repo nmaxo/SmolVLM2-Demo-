@@ -1,0 +1,26 @@
+# ===== CORE DEPENDENCIES =====
+
+# Backend Framework
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+
+# Frontend Framework
+streamlit==1.28.2
+
+# ===== ML/AI MODELS =====
+
+# Model Loading & Inference
+transformers==4.35.2
+torch==2.1.0
+
+# Image Processing
+pillow==10.1.0
+numpy==1.24.3
+
+# ===== UTILITIES =====
+
+# HTTP Requests
+requests==2.31.0
+
+# Form Data Handling
+python-multipart==0.0.6

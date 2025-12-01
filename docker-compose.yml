@@ -1,0 +1,53 @@
+version: "3.8"
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: smolvlm-backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend/uploads:/app/uploads
+      - huggingface_cache:/root/.cache/huggingface
+      - ./models:/models
+    environment:
+      - DEVICE=${DEVICE:-cpu}
+      - VQA_MODEL_ID=${VQA_MODEL_ID:-HuggingFaceTB/SmolVLM2-256M-Video-Instruct}
+      - MODEL_SIZE=${MODEL_SIZE:-256M}
+      - PORT=8000
+      - HF_HOME=/root/.cache/huggingface
+      - MODELS_DIR=/models
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    networks:
+      - smolvlm-net
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    container_name: smolvlm-frontend
+    ports:
+      - "8501:8501"
+    environment:
+      - BACKEND_URL=http://backend:8000
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - smolvlm-net
+    restart: unless-stopped
+
+networks:
+  smolvlm-net:
+    driver: bridge
+
+volumes:
+  huggingface_cache:
