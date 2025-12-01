@@ -4,6 +4,7 @@ fastapi
 uvicorn[standard]
 starlette
 pydantic>=2
+streamlit
 
 # ===== ML/AI MODELS =====
 

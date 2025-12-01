@@ -5,49 +5,53 @@ services:
     build:
       context: .
       dockerfile: backend/Dockerfile
-    container_name: smolvlm-backend
+    container_name: ${COMPOSE_PROJECT_NAME:-smolvlm}-backend
     ports:
-      - "8000:8000"
+      - "${BACKEND_PORT:-8000}:${BACKEND_INTERNAL_PORT:-8000}"
     volumes:
-      - ./backend/uploads:/app/uploads
-      - huggingface_cache:/root/.cache/huggingface
-      - ./models:/models
+      - ./backend/uploads:${UPLOADS_DIR:-/app/uploads}
+      - huggingface_cache:${HF_HOME:-/root/.cache/huggingface}
+      - ./models:${MODELS_DIR:-/models}
     environment:
       - DEVICE=${DEVICE:-cpu}
       - VQA_MODEL_ID=${VQA_MODEL_ID:-HuggingFaceTB/SmolVLM2-256M-Video-Instruct}
       - MODEL_SIZE=${MODEL_SIZE:-256M}
-      - PORT=8000
-      - HF_HOME=/root/.cache/huggingface
-      - MODELS_DIR=/models
+      - PORT=${BACKEND_INTERNAL_PORT:-8000}
+      - HF_HOME=${HF_HOME:-/root/.cache/huggingface}
+      - MODELS_DIR=${MODELS_DIR:-/models}
+      - SESSION_TIMEOUT=${SESSION_TIMEOUT:-3600}
+      - MAX_UPLOAD_SIZE=${MAX_UPLOAD_SIZE:-10}
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      test: ["CMD", "sh", "-c", "curl -f http://localhost:${BACKEND_INTERNAL_PORT:-8000}/health || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 60s
     networks:
       - smolvlm-net
-    restart: unless-stopped
+    restart: ${RESTART_POLICY:-unless-stopped}
 
   frontend:
     build:
       context: .
       dockerfile: frontend/Dockerfile
-    container_name: smolvlm-frontend
+    container_name: ${COMPOSE_PROJECT_NAME:-smolvlm}-frontend
     ports:
-      - "8501:8501"
+      - "${FRONTEND_PORT:-8501}:8501"
     environment:
-      - BACKEND_URL=http://backend:8000
+      - BACKEND_URL=${BACKEND_URL:-http://backend:8000}
     depends_on:
       backend:
         condition: service_healthy
     networks:
       - smolvlm-net
-    restart: unless-stopped
+    restart: ${RESTART_POLICY:-unless-stopped}
 
 networks:
   smolvlm-net:
     driver: bridge
+    name: ${COMPOSE_PROJECT_NAME:-smolvlm}-network
 
 volumes:
   huggingface_cache:
+    name: ${COMPOSE_PROJECT_NAME:-smolvlm}-hf-cache

@@ -301,6 +301,31 @@ async def vqa_ask(
     return {"answer": answer}
 
 
+@app.post("/api/vqa/ocr")
+async def vqa_ocr(image: UploadFile = File(...)):
+    """OCR using SmolVLM (extract text from image)"""
+    ensure_image(image)
+
+    img_bytes = await image.read()
+    try:
+        image_pil = Image.open(io.BytesIO(img_bytes)).convert("RGB")
+    except Exception:
+        raise HTTPException(status_code=400, detail="Failed to read image")
+
+    print("Running OCR via SmolVLM...")
+
+    ocr_question = (
+        "Extract all readable text from this image. "
+        "Return only the raw text without description."
+    )
+
+    text = model_handler.vqa(image_pil, ocr_question)
+    text = text.strip()
+
+    return {"text": text}
+
+
+
 if __name__ == "__main__":
     import uvicorn
 

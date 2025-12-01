@@ -19,7 +19,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Create necessary directories
 RUN mkdir -p /app/uploads ${HF_HOME} /models
 
-# ✅ Копируем ВЕСЬ backend (сохраняет структуру backend/app/main.py)
+# Копируем ВЕСЬ backend (сохраняет структуру backend/app/main.py)
 COPY backend /app/backend
 
 EXPOSE 8000
@@ -28,5 +28,5 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
     CMD curl -f http://localhost:8000/health || exit 1
 
-# ✅ Правильный модульный путь для backend/app/main.py
+# Правильный модульный путь для backend/app/main.py
 CMD ["uvicorn", "backend.app.main:app", "--host", "0.0.0.0", "--port", "8000"]

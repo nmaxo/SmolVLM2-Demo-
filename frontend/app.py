@@ -120,6 +120,44 @@ def ask_question(session_id, question):
         st.error(f"Request error: {str(e)}")
         return None
 
+def run_ocr_smolvlm(uploaded_file, paste_data):
+    try:
+        if uploaded_file is not None:
+            files = {
+                "image": (
+                    uploaded_file.name,
+                    uploaded_file.getvalue(),
+                    uploaded_file.type
+                )
+            }
+        elif paste_data:
+            data = paste_data.strip()
+            if data.startswith("data:"):
+                _, b64 = data.split(',', 1)
+            else:
+                b64 = data
+            img_bytes = base64.b64decode(b64)
+            files = {"image": ("pasted.png", img_bytes, "image/png")}
+        else:
+            st.error("Please upload or paste image first")
+            return None
+
+        with st.spinner("Running OCR via SmolVLM..."):
+            resp = requests.post(
+                f"{api_url}/api/vqa/ocr",
+                files=files,
+                timeout=60
+            )
+
+        if resp.status_code == 200:
+            return resp.json().get("text", "")
+        else:
+            st.error(resp.text)
+            return None
+
+    except Exception as e:
+        st.error(f"OCR error: {str(e)}")
+        return None
 
 # ===== MAIN UI =====
 st.title("🖼️ SmolVLM VQA & Captioning")
@@ -161,7 +199,7 @@ with col1:
             st.error("Failed to parse image. Check your data URL or base64.")
 
     if preview_image is not None:
-        st.image(preview_image, caption="Selected Image", use_column_width=True)
+        st.image(preview_image, caption="Selected Image", use_container_width=True)
 
 with col2:
     st.subheader("Session Status")
@@ -211,6 +249,27 @@ if st.session_state.get('vqa_session_id'):
 
 else:
     st.info("👆 Start by uploading an image and clicking 'Init VQA'")
+#############################OCR#######################################
+
+st.markdown("---")
+st.header("🔠 OCR via SmolVLM")
+
+if st.session_state.get('uploaded_image'):
+    if st.button("Run OCR (SmolVLM)", use_container_width=True):
+        text = run_ocr_smolvlm(st.session_state['uploaded_image'], paste_data)
+        if text:
+            st.subheader("📄 Recognized Text")
+            st.code(text)
+            # === DOWNLOAD AS TXT ===
+            st.download_button(
+                label="💾 Download OCR as .txt",
+                data=text,
+                file_name="ocr_result.txt",
+                mime="text/plain",
+                use_container_width=True
+            )
+else:
+    st.info("Upload an image above to use OCR")
 
 # ===== SIDEBAR STATUS =====
 st.sidebar.markdown("---")
